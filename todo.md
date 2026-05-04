@@ -24,7 +24,7 @@
 - [ ] Implement order editing functionality
 - [ ] Implement order deletion functionality
 - [x] Create order detail view
-- [ ] Implement payment confirmation button
+- [x] Implement payment confirmation button
 - [x] Create financial reports view with:
   - [x] Payment channel breakdown
   - [x] VAT 23% summary
@@ -56,8 +56,8 @@
 ## Testing & Deployment
 - [x] Write unit tests for business logic (time/cost calculations)
 - [x] Write integration tests for order creation and conflict detection
-- [ ] Test payment confirmation workflow
-- [ ] Test financial reporting accuracy
+- [x] Test payment confirmation workflow
+- [x] Test financial reporting accuracy
 - [ ] Test Google Calendar integration
 - [ ] Test mobile PWA functionality
 - [ ] Performance testing and optimization

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, DollarSign, Users, LogOut } from "lucide-react";
@@ -8,14 +9,28 @@ import { trpc } from "@/lib/trpc";
 import OrderCalendar from "@/components/OrderCalendar";
 import OrderForm from "@/components/OrderForm";
 import FinancialReport from "@/components/FinancialReport";
+import OrderDetail from "@/components/OrderDetail";
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("calendar");
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<number | null>(null);
   
-  const { data: orders = [] } = trpc.orders.list.useQuery();
+  const { data: orders = [], refetch: refetchOrders } = trpc.orders.list.useQuery();
   const { data: cleaners = [] } = trpc.cleaners.list.useQuery();
+  const confirmPaymentMutation = trpc.orders.confirmPayment.useMutation();
+  const selectedOrderData = selectedOrder ? orders.find(o => o.id === selectedOrder) : null;
+
+  const handleConfirmPayment = async (orderId: number) => {
+    try {
+      await confirmPaymentMutation.mutateAsync({ orderId });
+      toast.success('Payment confirmed');
+      refetchOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to confirm payment');
+    }
+  };
 
   if (!user || user.role !== 'admin') {
     return (
@@ -136,7 +151,11 @@ export default function AdminDashboard() {
                 <p className="text-gray-500 text-center py-8">No orders yet</p>
               ) : (
                 orders.map(order => (
-                  <Card key={order.id} className="hover:shadow-md transition">
+                  <Card
+                    key={order.id}
+                    className="hover:shadow-md transition cursor-pointer"
+                    onClick={() => setSelectedOrder(order.id)}
+                  >
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
@@ -170,8 +189,13 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                         {!order.isPaid && (
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-                            Confirm Payment
+                          <Button
+                            size="sm"
+                            onClick={() => handleConfirmPayment(order.id)}
+                            disabled={confirmPaymentMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {confirmPaymentMutation.isPending ? 'Confirming...' : 'Confirm Payment'}
                           </Button>
                         )}
                       </div>
@@ -189,6 +213,16 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Order Detail Modal */}
+      {selectedOrderData && (
+        <OrderDetail
+          order={selectedOrderData}
+          onClose={() => setSelectedOrder(null)}
+          onConfirmPayment={handleConfirmPayment}
+          isConfirming={confirmPaymentMutation.isPending}
+        />
+      )}
     </div>
   );
 }
